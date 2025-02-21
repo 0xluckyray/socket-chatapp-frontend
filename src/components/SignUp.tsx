@@ -1,17 +1,32 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
+import axios from 'axios';
 
 export default function SignUp() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Add registration logic here
-    navigate('/chat');
+    const formData = {
+      name: name,
+      email: email,
+      username: username,
+      password: password,
+    }
+    const response = await axios.post('http://localhost:3000/api/users/sign-up', formData);
+    if (response.status === 200) {
+      console.log(response.data.msg);
+      navigate('/SignIn');
+    } else {
+      alert('Registration failed');
+    }
+    // navigate('/chat');
   };
 
   return (
@@ -25,6 +40,22 @@ export default function SignUp() {
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+          <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-400 uppercase mb-2">
+                Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autoComplete="name"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-700 bg-gray-800 placeholder-gray-500 text-white rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Enter your name"
+              />
+            </div>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-400 uppercase mb-2">
                 Email

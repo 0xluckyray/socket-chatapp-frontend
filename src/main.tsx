@@ -4,12 +4,15 @@ import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 import './index.css';
 import { SocketProvider } from './context/SocketContext';
+import { Provider } from 'jotai';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
       <SocketProvider>
-        <App />
+        <Provider>
+          <App />
+        </Provider>
       </SocketProvider>
     </BrowserRouter>
   </StrictMode>

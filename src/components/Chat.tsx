@@ -156,6 +156,8 @@ export default function Chat() {
   const [users, setUsers] = useState<DMUser[]>(mockUsers);
   const navigate = useNavigate();
 
+  const token = localStorage.getItem('token');
+
   const { socket, isConnected } = useSocket();
   const [username] = useState('User_' + Math.floor(Math.random() * 1000));
 
@@ -167,7 +169,8 @@ export default function Chat() {
     if (!socket || !isConnected) return;
 
     // Join with user info
-    socket.emit('join', { userId: socket.id, username });
+    // socket.emit('join', { userId: socket.id, username });
+    socket.emit('authenticate', { userId: socket.id, token });
 
     // Listen for new messages
     socket.on('newMessage', ({ message, channelId, serverId }) => {

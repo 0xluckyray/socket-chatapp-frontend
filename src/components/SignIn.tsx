@@ -1,16 +1,28 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
+import axios from 'axios';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Add authentication logic here
-    navigate('/chat');
+    const payload = {
+      email: email,
+      password: password
+    }
+    const response = await axios.post('http://localhost:3000/api/users/sign-in', payload);
+    console.log(response);
+    if(response.status == 200){
+      localStorage.setItem('token', response.data.token);
+      navigate('/chat');
+    }
+    else{
+      alert('Invalid credentials');
+    }
   };
 
   return (
