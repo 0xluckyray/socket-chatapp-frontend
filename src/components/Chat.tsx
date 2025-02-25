@@ -6,6 +6,8 @@ import CreateServerModal from './CreateServerModal';
 import ServerSettingsModal from './ServerSettingsModal';
 import ProfileModal from './ProfileModal';
 import CreateChannelModal from './CreateChannelModal';
+import { useAtom } from "jotai";
+import { userInfoAtom } from '../store';
 
 interface Server {
   id: string;
@@ -143,9 +145,12 @@ function Channel({ name, active, onClick }: { name: string; active?: boolean; on
 }
 
 export default function Chat() {
+  const [userInfo, ] = useAtom(userInfoAtom);
+
   const [activeView, setActiveView] = useState<'dm' | 'server'>('dm');
   const [showProfile, setShowProfile] = useState(false);
   const [activeDM, setActiveDM] = useState<string | null>(null);
+  const [activeUser, setActiveUser] = useState<any | null>();
   const [activeServer, setActiveServer] = useState<string | null>(null);
   const [activeChannel, setActiveChannel] = useState<string | null>(null);
   const [showCreateServer, setShowCreateServer] = useState(false);
@@ -156,21 +161,23 @@ export default function Chat() {
   const [users, setUsers] = useState<DMUser[]>(mockUsers);
   const navigate = useNavigate();
 
-  const token = localStorage.getItem('token');
 
+  
   const { socket, isConnected } = useSocket();
-  const [username] = useState('User_' + Math.floor(Math.random() * 1000));
-
-  const activeUser = users.find(user => user.id === activeDM);
+  // const [username] = useState('User_' + Math.floor(Math.random() * 1000));
+  
+  // const activeUser = users.find(user => user.id === activeDM);
   const currentServer = servers.find(server => server.id === activeServer);
   const currentChannel = currentServer?.channels.find(channel => channel.id === activeChannel);
+  
+  console.log("hello", activeDM, activeUser, users);
 
   useEffect(() => {
     if (!socket || !isConnected) return;
 
     // Join with user info
-    // socket.emit('join', { userId: socket.id, username });
-    socket.emit('authenticate', { userId: socket.id, token });
+    socket.emit('join', { userId: userInfo.userId, username: userInfo.userName });
+    // socket.emit('authenticate', { userId: socket.id, token });
 
     // Listen for new messages
     socket.on('newMessage', ({ message, channelId, serverId }) => {
@@ -188,8 +195,9 @@ export default function Chat() {
             : server
         ));
       } else {
+        console.log("newMessage", channelId, message, users[0].id);
         setUsers(prevUsers => prevUsers.map(user => 
-          user.id === channelId
+          user.id == channelId
             ? { 
                 ...user, 
                 messages: [...user.messages, message],
@@ -203,6 +211,7 @@ export default function Chat() {
 
     // Listen for channel history
     socket.on('channelHistory', ({ messages, channelId, serverId }) => {
+      console.log("channelHistory", messages, channelId, serverId);
       if (serverId) {
         setServers(prevServers => prevServers.map(server => 
           server.id === serverId
@@ -229,18 +238,40 @@ export default function Chat() {
       socket.off('newMessage');
       socket.off('channelHistory');
     };
-  }, [socket, isConnected, username]);
+  }, [socket, isConnected, userInfo]);
 
   // Join channel when active channel changes
   useEffect(() => {
     if (!socket || !isConnected) return;
-
+    console.log("activeDM", activeDM);
+    
     if (activeView === 'dm' && activeDM) {
       socket.emit('joinChannel', { channelId: activeDM });
     } else if (activeView === 'server' && activeServer && activeChannel) {
       socket.emit('joinChannel', { channelId: activeChannel, serverId: activeServer });
     }
   }, [socket, isConnected, activeView, activeDM, activeServer, activeChannel]);
+
+  // Listen for user list updates
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    socket.on("userList", (userList) => {
+      const tempUser = (userList as DMUser[]).find(user => user.id == activeDM); // Filter Active User
+      console.log('userlist--------------->', activeDM, userList, tempUser);
+      setActiveUser(tempUser);
+      setUsers(userList);
+    });
+
+    return () => {
+      socket.off("userList");
+    };
+  }, [socket]);
+
+  useEffect(() => {
+    const tempUser = users.find(user => user.id === activeDM);
+    setActiveUser(tempUser);
+  }, [socket, users, activeDM])
 
   const handleCreateServer = (name: string, icon: string) => {
     const newServer: Server = {
@@ -415,7 +446,7 @@ export default function Chat() {
               className="flex-1 cursor-pointer hover:underline"
               onClick={() => setShowProfile(true)}
             >
-              <div className="font-medium">{username}</div>
+              <div className="font-medium">{userInfo.userName}</div>
               <div className="text-xs text-gray-400">#1234</div>
             </div>
             <Settings className="w-5 h-5 text-gray-400 hover:text-white cursor-pointer" onClick={() => navigate('/signin')} />
@@ -451,7 +482,7 @@ export default function Chat() {
         <div className="flex-1 overflow-y-auto">
           {activeView === 'dm' ? (
             activeUser ? (
-              activeUser.messages.map(message => (
+              activeUser.messages.map((message: Message) => (
                 <Message key={message.id} message={message} />
               ))
             ) : (
