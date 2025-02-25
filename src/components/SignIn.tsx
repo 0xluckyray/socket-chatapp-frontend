@@ -2,8 +2,12 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MessageSquare } from 'lucide-react';
 import axios from 'axios';
+import { useAtom } from "jotai";
+import { userInfoAtom } from '../store';
 
 export default function SignIn() {
+  const [, setUserInfo] = useAtom(userInfoAtom);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
@@ -15,9 +19,14 @@ export default function SignIn() {
       password: password
     }
     const response = await axios.post('http://localhost:3000/api/users/sign-in', payload);
-    console.log(response);
+    console.log(response.data);
     if(response.status == 200){
       localStorage.setItem('token', response.data.token);
+      setUserInfo({
+        userId: response.data.userid,
+        userName: response.data.username,
+        name: response.data.name
+      });
       navigate('/chat');
     }
     else{
