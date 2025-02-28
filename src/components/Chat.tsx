@@ -260,7 +260,8 @@ export default function Chat() {
       const tempUser = (userList as DMUser[]).find(user => user.id == activeDM); // Filter Active User
       console.log('userlist--------------->', activeDM, userList, tempUser);
       setActiveUser(tempUser);
-      setUsers(userList);
+      const onlineUsers = (userList as DMUser[]).filter(user => user.id != userInfo.userId);
+      setUsers(onlineUsers);
     });
 
     return () => {
